@@ -9,13 +9,14 @@
 ```typescript
 import { KissDockerCompose } from 'kiss-docker-compose'
 
-new KissDockerCompose(scope: Construct, id: string)
+new KissDockerCompose(scope: Construct, id: string, dockerComposeFileAsString: string)
 ```
 
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
 | <code><a href="#kiss-docker-compose.KissDockerCompose.Initializer.parameter.scope">scope</a></code> | <code>constructs.Construct</code> | *No description.* |
 | <code><a href="#kiss-docker-compose.KissDockerCompose.Initializer.parameter.id">id</a></code> | <code>string</code> | *No description.* |
+| <code><a href="#kiss-docker-compose.KissDockerCompose.Initializer.parameter.dockerComposeFileAsString">dockerComposeFileAsString</a></code> | <code>string</code> | *No description.* |
 
 ---
 
@@ -26,6 +27,12 @@ new KissDockerCompose(scope: Construct, id: string)
 ---
 
 ##### `id`<sup>Required</sup> <a name="id" id="kiss-docker-compose.KissDockerCompose.Initializer.parameter.id"></a>
+
+- *Type:* string
+
+---
+
+##### `dockerComposeFileAsString`<sup>Required</sup> <a name="dockerComposeFileAsString" id="kiss-docker-compose.KissDockerCompose.Initializer.parameter.dockerComposeFileAsString"></a>
 
 - *Type:* string
 

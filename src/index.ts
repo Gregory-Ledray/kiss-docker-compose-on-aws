@@ -10,7 +10,7 @@ export class KissDockerCompose extends Construct {
   readonly regionOfECR = cdk.Stack.of(this).region;
   readonly regionOfEC2Instances = cdk.Stack.of(this).region;
 
-  constructor(scope: Construct, id: string) {
+  constructor(scope: Construct, id: string, dockerComposeFileAsString: string) {
     super(scope, id);
 
     this.appName = id;
@@ -126,7 +126,7 @@ export class KissDockerCompose extends Construct {
                 'awslogs-create-group': true,
               },
             }),
-            ec2.InitFile.fromFileInline('/home/ec2-user/docker-compose.yml', '/Users/gregoryledray/Documents/gregoryledray.com/infra/docker-compose.yml'),
+            ec2.InitFile.fromString('/home/ec2-user/docker-compose.yml', dockerComposeFileAsString),
             ec2.InitFile.fromString('/etc/install.sh', this.installAndStartupScript()),
             ec2.InitFile.fromString('/etc/systemd/system/docker-compose-app.service', this.dockerComposeAppService()),
             ec2.InitFile.fromString('/home/ec2-user/docker-compose-setup.sh', this.dockerComposeSetup(cdk.Stack.of(this).account, this.regionOfECR, repos)),
