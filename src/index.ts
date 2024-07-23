@@ -10,7 +10,24 @@ export class KissDockerCompose extends Construct {
   readonly regionOfECR = cdk.Stack.of(this).region;
   readonly regionOfEC2Instances = cdk.Stack.of(this).region;
 
-  constructor(scope: Construct, id: string, dockerComposeFileAsString: string, repositoriesForDockerComposeImages?: cdk.aws_ecr.Repository[]) {
+  // scope: See AWS CDK documentation for information about this parameter
+  // id: This is used to name instances so you can deploy multiple kiss-docker-compose-on-aws in the same region
+  // dockerComposeFileAsString: Your Docker Compose file, stringified. This is copied to the EC2 instance without modification
+  // repositoriesForDockerComposeImages: ECR repositories containing images used for your Docker Compose application. This is primarily used for pre-pulling images before starting the application to make sure the current image is up to date. If you do not have ECR images you can leave this as an empty array - [] - if you set this to null then the default image repos will be created
+  // ec2Instance: setting this value overrides and ignores the repositoriesForDockerComposeImages, vpc, ec2InstanceRole, and instanceSecurityGroup parameters. This is the EC2 Instance used by this CDK.
+  // vpc: setting this overrides the template's VPC into which the ec2Instance is deployed.
+  // ec2InstanceRole: setting this overrides the template's Role with which the ec2Instance is deployed.
+  // instanceSecurityGroup: setting this overrides the template's SecurityGroup with which the ec2Instance is deployed.
+  constructor(
+    scope: Construct,
+    id: string,
+    dockerComposeFileAsString: string,
+    repositoriesForDockerComposeImages: cdk.aws_ecr.Repository[],
+    ec2Instance?: cdk.aws_ec2.Instance,
+    vpc?: cdk.aws_ec2.Vpc,
+    ec2InstanceRole?: cdk.aws_iam.Role,
+    instanceSecurityGroup?: cdk.aws_ec2.SecurityGroup,
+  ) {
     super(scope, id);
 
     this.appName = id;
@@ -18,143 +35,153 @@ export class KissDockerCompose extends Construct {
 
     // This is largely based on my blog post: https://dev.to/gregoryledray/apply-kiss-to-infrastructure-3j6d
 
-    // Set up ECR for each of the images we intend to save so that I can pull from these images during deployments
-    if (repositoriesForDockerComposeImages == null) {
-      // TODO gather this information by parsing the Docker Compose file instead of using the default names
-      const preventExcessiveImages = {
-        description: 'Prevent excessive numbers of images',
-        maxImageCount: 100,
-        rulePriority: 10,
-      };
-      const frontendECR = new ecr.Repository(this, 'frontendECR', {
-        repositoryName: `${this.lowercaseAppName}-frontend`,
-        lifecycleRules: [preventExcessiveImages],
+    if (ec2Instance == null) {
+      // Set up ECR for each of the images we intend to save so that I can pull from these images during deployments
+      if (repositoriesForDockerComposeImages == null) {
+        // TODO gather this information by parsing the Docker Compose file instead of using the default names
+        const preventExcessiveImages = {
+          description: 'Prevent excessive numbers of images',
+          maxImageCount: 100,
+          rulePriority: 10,
+        };
+        const frontendECR = new ecr.Repository(this, 'frontendECR', {
+          repositoryName: `${this.lowercaseAppName}-frontend`,
+          lifecycleRules: [preventExcessiveImages],
+        });
+        const backendECR = new ecr.Repository(this, 'backendECR', {
+          repositoryName: `${this.lowercaseAppName}-backend`,
+          lifecycleRules: [preventExcessiveImages],
+        });
+        const dbECR = new ecr.Repository(this, 'dbECR', {
+          repositoryName: `${this.lowercaseAppName}-db`,
+          lifecycleRules: [preventExcessiveImages],
+        });
+        repositoriesForDockerComposeImages = [
+          frontendECR,
+          backendECR,
+          dbECR,
+        ];
+      }
+      const repos = [];
+      for (let i = 0; i < repositoriesForDockerComposeImages?.length; i++) {
+        repos.push(repositoriesForDockerComposeImages[i].repositoryUriForDigest());
+      }
+
+      if (vpc == null) {
+        vpc = new ec2.Vpc(this, 'vpc', {
+          createInternetGateway: true,
+          enableDnsHostnames: true,
+          enableDnsSupport: true,
+          ipProtocol: ec2.IpProtocol.DUAL_STACK,
+          subnetConfiguration: [
+            {
+              name: this.appName,
+              subnetType: ec2.SubnetType.PUBLIC,
+              ipv6AssignAddressOnCreation: true,
+              mapPublicIpOnLaunch: true,
+              cidrMask: 24,
+            },
+          ],
+          vpcName: this.appName,
+        });
+      }
+
+      if (ec2InstanceRole == null) {
+        ec2InstanceRole = new iam.Role(this, `${this.appName}-ec2-role`, {
+          assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
+          managedPolicies: [
+            // This allows the Docker Compose module "Pre" to pull the docker container images from ECR, which is critical since the source code is not stored on the EC2 instance so Docker Compose can't build the image locally
+            // Without this, the command `/home/ec2-user/docker-compose-setup.sh` returns the error:
+            // An error occurred (AccessDeniedException) when calling the GetAuthorizationToken operation: User: arn:aws:sts::*:assumed-role/... is not authorized to perform: ecr:GetAuthorizationToken on resource: * because no identity-based policy allows the ecr:GetAuthorizationToken action
+            iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEC2ContainerRegistryReadOnly'),
+
+            // This allows the Docker Compose containers to write to CloudWatch Logs, which is necessary to make our container's operations observable outside of the VM, which makes them easier to access and easier to examine when the machine isn't reachable via SSH
+            // Without this, journalctl will show an error like this one:
+            // Error response from daemon: failed to create task for container: failed to initialize logging driver: failed to create Cloudwatch log stream
+            iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchFullAccess'),
+          ],
+        });
+      }
+
+      if (instanceSecurityGroup == null) {
+        instanceSecurityGroup = new ec2.SecurityGroup(this, `${this.appName}-ec2-security-group`, {
+          vpc: vpc,
+          allowAllIpv6Outbound: true,
+          allowAllOutbound: true,
+          disableInlineRules: true,
+        });
+        instanceSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80), 'Allow port 80 access from anywhere');
+        instanceSecurityGroup.addIngressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(80), 'Allow port 80 access from anywhere');
+        instanceSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(22), 'Allow SSH access from anywhere');
+      }
+      ec2Instance = new ec2.Instance(this, `${this.appName}`, {
+        // This first section contains relatively common properties for an EC2 instance
+        vpc: vpc,
+        role: ec2InstanceRole,
+        securityGroup: instanceSecurityGroup,
+
+        // This is an x86 instance type and machine image
+        instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
+        machineImage: ec2.MachineImage.latestAmazonLinux2023(),
+
+        // This is an ARM64 instance type and machine image
+        // instanceType: ec2.InstanceType.of(ec2.InstanceClass.T4G, ec2.InstanceSize.MICRO),
+        //   machineImage: ec2.MachineImage.fromSsmParameter(
+        //     '/aws/service/ecs/optimized-ami/amazon-linux-2/arm64/recommended/image_id'
+        //     // '/aws/service/ecs/optimized-ami/amazon-linux-2/recommended' // did not work - does not exist
+        // ),
+
+        instanceName: `${this.appName}`,
+        requireImdsv2: true,
+
+        // This is NOT NECESSARY because EC2 Instance Connect can be used to connect to this instance
+        // And that service creates and shares its own key pair with the instance which is managed by AWS
+        // You need to have a key pair to connect at all
+        // See: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/launch_container_instance.html#linux-liw-key-pair
+        // keyPair: keyPair,
+
+        // This next section is for our specific docker compose needs
+        //
+        // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/deploying.applications.html#deployment-walkthrough-lamp-install
+        init: ec2.CloudFormationInit.fromConfigSets({
+          configSets: {
+            // Runs configs['install'] aka configs.install
+            default: ['install'],
+          },
+          configs: {
+            install: new ec2.InitConfig([
+              ec2.InitFile.fromObject('/etc/docker/daemon.json', {
+                'log-driver': 'awslogs',
+                'log-opts': {
+                  'awslogs-region': this.regionOfEC2Instances,
+                  'awslogs-group': 'intelligentrxcom',
+                  'awslogs-create-group': true,
+                },
+              }),
+              ec2.InitFile.fromString('/home/ec2-user/docker-compose.yml', dockerComposeFileAsString),
+              ec2.InitFile.fromString('/etc/install.sh', this.installAndStartupScript()),
+              ec2.InitFile.fromString('/etc/systemd/system/docker-compose-app.service', this.dockerComposeAppService()),
+              ec2.InitFile.fromString('/home/ec2-user/docker-compose-setup.sh', this.dockerComposeSetup(cdk.Stack.of(this).account, this.regionOfECR, repos)),
+              ec2.InitCommand.shellCommand('chmod +x /etc/install.sh'),
+              ec2.InitCommand.shellCommand('/etc/install.sh'),
+
+              // The very first time we start the machine, we need to start the unit because it won't start automatically without rebooting
+              ec2.InitCommand.shellCommand('sudo systemctl start docker-compose-app.service'),
+            ]),
+          },
+        }),
+        userData: ec2.UserData.custom(this.cfnSignal(`${this.appName}-ec2`, cdk.Stack.of(this).stackName, cdk.Stack.of(this).region)),
+
+        initOptions: {
+          // Set a very long timeout in case some steps take an excessive amount of time
+          timeout: cdk.Duration.minutes(4),
+        },
       });
-      const backendECR = new ecr.Repository(this, 'backendECR', {
-        repositoryName: `${this.lowercaseAppName}-backend`,
-        lifecycleRules: [preventExcessiveImages],
-      });
-      const dbECR = new ecr.Repository(this, 'dbECR', {
-        repositoryName: `${this.lowercaseAppName}-db`,
-        lifecycleRules: [preventExcessiveImages],
-      });
-      repositoriesForDockerComposeImages = [
-        frontendECR,
-        backendECR,
-        dbECR,
-      ];
     }
-    const repos = [];
-    for (let i = 0; i < repositoriesForDockerComposeImages?.length; i++) {
-      repos.push(repositoriesForDockerComposeImages[i].repositoryUriForDigest());
-    }
 
-    // Create a VM which will be used to host the docker compose application
-    const vpc = new ec2.Vpc(this, 'vpc', {
-      createInternetGateway: true,
-      enableDnsHostnames: true,
-      enableDnsSupport: true,
-      ipProtocol: ec2.IpProtocol.DUAL_STACK,
-      subnetConfiguration: [
-        {
-          name: this.appName,
-          subnetType: ec2.SubnetType.PUBLIC,
-          ipv6AssignAddressOnCreation: true,
-          mapPublicIpOnLaunch: true,
-          cidrMask: 24,
-        },
-      ],
-      vpcName: this.appName,
-    });
-    const instanceRole = new iam.Role(this, `${this.appName}-ec2-role`, {
-      assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
-      managedPolicies: [
-        // This allows the Docker Compose module "Pre" to pull the docker container images from ECR, which is critical since the source code is not stored on the EC2 instance so Docker Compose can't build the image locally
-        // Without this, the command `/home/ec2-user/docker-compose-setup.sh` returns the error:
-        // An error occurred (AccessDeniedException) when calling the GetAuthorizationToken operation: User: arn:aws:sts::*:assumed-role/... is not authorized to perform: ecr:GetAuthorizationToken on resource: * because no identity-based policy allows the ecr:GetAuthorizationToken action
-        iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEC2ContainerRegistryReadOnly'),
-
-        // This allows the Docker Compose containers to write to CloudWatch Logs, which is necessary to make our container's operations observable outside of the VM, which makes them easier to access and easier to examine when the machine isn't reachable via SSH
-        // Without this, journalctl will show an error like this one:
-        // Error response from daemon: failed to create task for container: failed to initialize logging driver: failed to create Cloudwatch log stream
-        iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchFullAccess'),
-      ],
-    });
-    const instanceSecurityGroup = new ec2.SecurityGroup(this, `${this.appName}-ec2-security-group`, {
-      vpc: vpc,
-      allowAllIpv6Outbound: true,
-      allowAllOutbound: true,
-      disableInlineRules: true,
-    });
-    instanceSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80), 'Allow port 80 access from anywhere');
-    instanceSecurityGroup.addIngressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(80), 'Allow port 80 access from anywhere');
-    instanceSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(22), 'Allow SSH access from anywhere');
-    const instance = new ec2.Instance(this, `${this.appName}`, {
-      // This first section contains relatively common properties for an EC2 instance
-      vpc: vpc,
-      role: instanceRole,
-      securityGroup: instanceSecurityGroup,
-
-      // This is an x86 instance type and machine image
-      instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, ec2.InstanceSize.MICRO),
-      machineImage: ec2.MachineImage.latestAmazonLinux2023(),
-
-      // This is an ARM64 instance type and machine image
-      // instanceType: ec2.InstanceType.of(ec2.InstanceClass.T4G, ec2.InstanceSize.MICRO),
-      //   machineImage: ec2.MachineImage.fromSsmParameter(
-      //     '/aws/service/ecs/optimized-ami/amazon-linux-2/arm64/recommended/image_id'
-      //     // '/aws/service/ecs/optimized-ami/amazon-linux-2/recommended' // did not work - does not exist
-      // ),
-
-      instanceName: `${this.appName}`,
-      requireImdsv2: true,
-
-      // This is NOT NECESSARY because EC2 Instance Connect can be used to connect to this instance
-      // And that service creates and shares its own key pair with the instance which is managed by AWS
-      // You need to have a key pair to connect at all
-      // See: https://docs.aws.amazon.com/AmazonECS/latest/developerguide/launch_container_instance.html#linux-liw-key-pair
-      // keyPair: keyPair,
-
-      // This next section is for our specific docker compose needs
-      //
-      // https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/deploying.applications.html#deployment-walkthrough-lamp-install
-      init: ec2.CloudFormationInit.fromConfigSets({
-        configSets: {
-          // Runs configs['install'] aka configs.install
-          default: ['install'],
-        },
-        configs: {
-          install: new ec2.InitConfig([
-            ec2.InitFile.fromObject('/etc/docker/daemon.json', {
-              'log-driver': 'awslogs',
-              'log-opts': {
-                'awslogs-region': this.regionOfEC2Instances,
-                'awslogs-group': 'intelligentrxcom',
-                'awslogs-create-group': true,
-              },
-            }),
-            ec2.InitFile.fromString('/home/ec2-user/docker-compose.yml', dockerComposeFileAsString),
-            ec2.InitFile.fromString('/etc/install.sh', this.installAndStartupScript()),
-            ec2.InitFile.fromString('/etc/systemd/system/docker-compose-app.service', this.dockerComposeAppService()),
-            ec2.InitFile.fromString('/home/ec2-user/docker-compose-setup.sh', this.dockerComposeSetup(cdk.Stack.of(this).account, this.regionOfECR, repos)),
-            ec2.InitCommand.shellCommand('chmod +x /etc/install.sh'),
-            ec2.InitCommand.shellCommand('/etc/install.sh'),
-
-            // The very first time we start the machine, we need to start the unit because it won't start automatically without rebooting
-            ec2.InitCommand.shellCommand('sudo systemctl start docker-compose-app.service'),
-          ]),
-        },
-      }),
-      userData: ec2.UserData.custom(this.cfnSignal(`${this.appName}-ec2`, cdk.Stack.of(this).stackName, cdk.Stack.of(this).region)),
-
-      initOptions: {
-        // Set a very long timeout in case some steps take an excessive amount of time
-        timeout: cdk.Duration.minutes(4),
-      },
-    });
 
     new cdk.CfnOutput(this, `${this.appName}-public-ip`, {
-      value: instance.instancePublicIp,
+      value: ec2Instance.instancePublicIp,
       exportName: `${this.appName}-public-ip`,
     });
   }

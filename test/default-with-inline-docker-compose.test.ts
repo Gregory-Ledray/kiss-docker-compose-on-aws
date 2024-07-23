@@ -66,7 +66,7 @@ volumes:
   db-data:
 `;
 const stack = new Stack(mockApp);
-new KissDockerCompose(stack, 'testing-stack', dockerComposeFileAsString);
+new KissDockerCompose(stack, 'testing-stack', dockerComposeFileAsString, []);
 const noConfigurationTemplate = Template.fromStack(stack);
 
 test('VPC should exist', () => {

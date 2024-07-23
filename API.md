@@ -9,7 +9,7 @@
 ```typescript
 import { KissDockerCompose } from 'kiss-docker-compose'
 
-new KissDockerCompose(scope: Construct, id: string, dockerComposeFileAsString: string, repositoriesForDockerComposeImages?: Repository[])
+new KissDockerCompose(scope: Construct, id: string, dockerComposeFileAsString: string, repositoriesForDockerComposeImages: Repository[], ec2Instance?: Instance, vpc?: Vpc, ec2InstanceRole?: Role, instanceSecurityGroup?: SecurityGroup)
 ```
 
 | **Name** | **Type** | **Description** |
@@ -18,6 +18,10 @@ new KissDockerCompose(scope: Construct, id: string, dockerComposeFileAsString: s
 | <code><a href="#kiss-docker-compose.KissDockerCompose.Initializer.parameter.id">id</a></code> | <code>string</code> | *No description.* |
 | <code><a href="#kiss-docker-compose.KissDockerCompose.Initializer.parameter.dockerComposeFileAsString">dockerComposeFileAsString</a></code> | <code>string</code> | *No description.* |
 | <code><a href="#kiss-docker-compose.KissDockerCompose.Initializer.parameter.repositoriesForDockerComposeImages">repositoriesForDockerComposeImages</a></code> | <code>aws-cdk-lib.aws_ecr.Repository[]</code> | *No description.* |
+| <code><a href="#kiss-docker-compose.KissDockerCompose.Initializer.parameter.ec2Instance">ec2Instance</a></code> | <code>aws-cdk-lib.aws_ec2.Instance</code> | *No description.* |
+| <code><a href="#kiss-docker-compose.KissDockerCompose.Initializer.parameter.vpc">vpc</a></code> | <code>aws-cdk-lib.aws_ec2.Vpc</code> | *No description.* |
+| <code><a href="#kiss-docker-compose.KissDockerCompose.Initializer.parameter.ec2InstanceRole">ec2InstanceRole</a></code> | <code>aws-cdk-lib.aws_iam.Role</code> | *No description.* |
+| <code><a href="#kiss-docker-compose.KissDockerCompose.Initializer.parameter.instanceSecurityGroup">instanceSecurityGroup</a></code> | <code>aws-cdk-lib.aws_ec2.SecurityGroup</code> | *No description.* |
 
 ---
 
@@ -39,9 +43,33 @@ new KissDockerCompose(scope: Construct, id: string, dockerComposeFileAsString: s
 
 ---
 
-##### `repositoriesForDockerComposeImages`<sup>Optional</sup> <a name="repositoriesForDockerComposeImages" id="kiss-docker-compose.KissDockerCompose.Initializer.parameter.repositoriesForDockerComposeImages"></a>
+##### `repositoriesForDockerComposeImages`<sup>Required</sup> <a name="repositoriesForDockerComposeImages" id="kiss-docker-compose.KissDockerCompose.Initializer.parameter.repositoriesForDockerComposeImages"></a>
 
 - *Type:* aws-cdk-lib.aws_ecr.Repository[]
+
+---
+
+##### `ec2Instance`<sup>Optional</sup> <a name="ec2Instance" id="kiss-docker-compose.KissDockerCompose.Initializer.parameter.ec2Instance"></a>
+
+- *Type:* aws-cdk-lib.aws_ec2.Instance
+
+---
+
+##### `vpc`<sup>Optional</sup> <a name="vpc" id="kiss-docker-compose.KissDockerCompose.Initializer.parameter.vpc"></a>
+
+- *Type:* aws-cdk-lib.aws_ec2.Vpc
+
+---
+
+##### `ec2InstanceRole`<sup>Optional</sup> <a name="ec2InstanceRole" id="kiss-docker-compose.KissDockerCompose.Initializer.parameter.ec2InstanceRole"></a>
+
+- *Type:* aws-cdk-lib.aws_iam.Role
+
+---
+
+##### `instanceSecurityGroup`<sup>Optional</sup> <a name="instanceSecurityGroup" id="kiss-docker-compose.KissDockerCompose.Initializer.parameter.instanceSecurityGroup"></a>
+
+- *Type:* aws-cdk-lib.aws_ec2.SecurityGroup
 
 ---
 
