@@ -10,7 +10,7 @@ export class KissDockerCompose extends Construct {
   readonly regionOfECR = cdk.Stack.of(this).region;
   readonly regionOfEC2Instances = cdk.Stack.of(this).region;
 
-  constructor(scope: Construct, id: string, dockerComposeFileAsString: string) {
+  constructor(scope: Construct, id: string, dockerComposeFileAsString: string, repositoriesForDockerComposeImages?: cdk.aws_ecr.Repository[]) {
     super(scope, id);
 
     this.appName = id;
@@ -19,28 +19,35 @@ export class KissDockerCompose extends Construct {
     // This is largely based on my blog post: https://dev.to/gregoryledray/apply-kiss-to-infrastructure-3j6d
 
     // Set up ECR for each of the images we intend to save so that I can pull from these images during deployments
-    const preventExcessiveImages = {
-      description: 'Prevent excessive numbers of images',
-      maxImageCount: 100,
-      rulePriority: 10,
-    };
-    const frontendECR = new ecr.Repository(this, 'frontendECR', {
-      repositoryName: `${this.lowercaseAppName}-frontend`,
-      lifecycleRules: [preventExcessiveImages],
-    });
-    const backendECR = new ecr.Repository(this, 'backendECR', {
-      repositoryName: `${this.lowercaseAppName}-backend`,
-      lifecycleRules: [preventExcessiveImages],
-    });
-    const dbECR = new ecr.Repository(this, 'dbECR', {
-      repositoryName: `${this.lowercaseAppName}-db`,
-      lifecycleRules: [preventExcessiveImages],
-    });
-    const repos = [
-      frontendECR.repositoryUriForDigest(),
-      backendECR.repositoryUriForDigest(),
-      dbECR.repositoryUriForDigest(),
-    ];
+    if (repositoriesForDockerComposeImages == null) {
+      // TODO gather this information by parsing the Docker Compose file instead of using the default names
+      const preventExcessiveImages = {
+        description: 'Prevent excessive numbers of images',
+        maxImageCount: 100,
+        rulePriority: 10,
+      };
+      const frontendECR = new ecr.Repository(this, 'frontendECR', {
+        repositoryName: `${this.lowercaseAppName}-frontend`,
+        lifecycleRules: [preventExcessiveImages],
+      });
+      const backendECR = new ecr.Repository(this, 'backendECR', {
+        repositoryName: `${this.lowercaseAppName}-backend`,
+        lifecycleRules: [preventExcessiveImages],
+      });
+      const dbECR = new ecr.Repository(this, 'dbECR', {
+        repositoryName: `${this.lowercaseAppName}-db`,
+        lifecycleRules: [preventExcessiveImages],
+      });
+      repositoriesForDockerComposeImages = [
+        frontendECR,
+        backendECR,
+        dbECR,
+      ];
+    }
+    const repos = [];
+    for (let i = 0; i < repositoriesForDockerComposeImages?.length; i++) {
+      repos.push(repositoriesForDockerComposeImages[i].repositoryUriForDigest());
+    }
 
     // Create a VM which will be used to host the docker compose application
     const vpc = new ec2.Vpc(this, 'vpc', {

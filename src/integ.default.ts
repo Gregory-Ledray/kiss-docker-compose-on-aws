@@ -51,4 +51,4 @@ volumes:
   db-data:
 `;
 
-new KissDockerCompose(stack, 'Kiss-Docker-Compose', dockerComposeFileAsString);
+new KissDockerCompose(stack, 'Kiss-Docker-Compose', dockerComposeFileAsString, []);

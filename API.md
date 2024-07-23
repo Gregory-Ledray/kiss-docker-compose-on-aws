@@ -9,7 +9,7 @@
 ```typescript
 import { KissDockerCompose } from 'kiss-docker-compose'
 
-new KissDockerCompose(scope: Construct, id: string, dockerComposeFileAsString: string)
+new KissDockerCompose(scope: Construct, id: string, dockerComposeFileAsString: string, repositoriesForDockerComposeImages?: Repository[])
 ```
 
 | **Name** | **Type** | **Description** |
@@ -17,6 +17,7 @@ new KissDockerCompose(scope: Construct, id: string, dockerComposeFileAsString: s
 | <code><a href="#kiss-docker-compose.KissDockerCompose.Initializer.parameter.scope">scope</a></code> | <code>constructs.Construct</code> | *No description.* |
 | <code><a href="#kiss-docker-compose.KissDockerCompose.Initializer.parameter.id">id</a></code> | <code>string</code> | *No description.* |
 | <code><a href="#kiss-docker-compose.KissDockerCompose.Initializer.parameter.dockerComposeFileAsString">dockerComposeFileAsString</a></code> | <code>string</code> | *No description.* |
+| <code><a href="#kiss-docker-compose.KissDockerCompose.Initializer.parameter.repositoriesForDockerComposeImages">repositoriesForDockerComposeImages</a></code> | <code>aws-cdk-lib.aws_ecr.Repository[]</code> | *No description.* |
 
 ---
 
@@ -35,6 +36,12 @@ new KissDockerCompose(scope: Construct, id: string, dockerComposeFileAsString: s
 ##### `dockerComposeFileAsString`<sup>Required</sup> <a name="dockerComposeFileAsString" id="kiss-docker-compose.KissDockerCompose.Initializer.parameter.dockerComposeFileAsString"></a>
 
 - *Type:* string
+
+---
+
+##### `repositoriesForDockerComposeImages`<sup>Optional</sup> <a name="repositoriesForDockerComposeImages" id="kiss-docker-compose.KissDockerCompose.Initializer.parameter.repositoriesForDockerComposeImages"></a>
+
+- *Type:* aws-cdk-lib.aws_ecr.Repository[]
 
 ---
 
