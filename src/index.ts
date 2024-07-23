@@ -146,7 +146,7 @@ export class KissDockerCompose extends Construct {
       },
     });
 
-    new cdk.CfnOutput(this, 'instance-public-ip', {
+    new cdk.CfnOutput(this, `${this.appName}-public-ip`, {
       value: instance.instancePublicIp,
       exportName: 'instance-public-ip',
     });
