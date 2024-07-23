@@ -82,7 +82,7 @@ export class KissDockerCompose extends Construct {
     instanceSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80), 'Allow port 80 access from anywhere');
     instanceSecurityGroup.addIngressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(80), 'Allow port 80 access from anywhere');
     instanceSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(22), 'Allow SSH access from anywhere');
-    const instance = new ec2.Instance(this, `${this.appName}-ec2`, {
+    const instance = new ec2.Instance(this, `${this.appName}`, {
       // This first section contains relatively common properties for an EC2 instance
       vpc: vpc,
       role: instanceRole,
