@@ -42,7 +42,7 @@ services:
     - 5001:80
     depends_on:
       db:
-        condition: service_healthy
+        condition: service_started
 
   db:
     image: postgres
