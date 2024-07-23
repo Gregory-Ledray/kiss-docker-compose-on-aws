@@ -99,7 +99,7 @@ export class KissDockerCompose extends Construct {
       //     // '/aws/service/ecs/optimized-ami/amazon-linux-2/recommended' // did not work - does not exist
       // ),
 
-      instanceName: `${this.appName}-ec2`,
+      instanceName: `${this.appName}`,
       requireImdsv2: true,
 
       // This is NOT NECESSARY because EC2 Instance Connect can be used to connect to this instance
