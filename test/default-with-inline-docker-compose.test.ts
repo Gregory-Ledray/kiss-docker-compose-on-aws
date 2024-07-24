@@ -50,7 +50,7 @@ services:
     # set shared memory limit when using docker-compose
     shm_size: 128mb
     healthcheck:
-      `+'test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]'+`
+      `+ 'test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]' + `
       interval: 15s
       timeout: 30s
       retries: 5
@@ -66,7 +66,7 @@ volumes:
   db-data:
 `;
 const stack = new Stack(mockApp);
-new KissDockerCompose(stack, 'testing-stack', dockerComposeFileAsString, []);
+new KissDockerCompose(stack, 'testing-stack', { dockerComposeFileAsString });
 const noConfigurationTemplate = Template.fromStack(stack);
 
 test('VPC should exist', () => {
