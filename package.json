@@ -3,7 +3,7 @@
   "description": "Cheap. Simple. Fast. Move your  Docker Compose application from your local machine to the cloud in 3 minutes with KISS-Docker-Compose. Cheap: All code runs on one small EC2. Simple: It runs the same way on your machine as it runs in the cloud. Fast: works by default.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Gregory-Ledray/kiss-docker-compose-on-aws.git"
+    "url": "https://github.com/Gregory-Ledray/kiss-docker-compose-on-aws"
   },
   "scripts": {
     "build": "npx projen build",
