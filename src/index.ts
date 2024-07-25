@@ -77,9 +77,7 @@ export class KissDockerCompose extends Construct {
     super(scope, id);
 
     if (props == null) {
-      props = {
-        dockerComposeFileAsString: '',
-      };
+      throw new Error('props == null');
     }
 
     // This is largely based on my blog post: https://dev.to/gregoryledray/apply-kiss-to-infrastructure-3j6d
