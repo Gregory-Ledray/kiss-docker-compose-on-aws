@@ -28,7 +28,7 @@ services:
     # build: 
     #   context: ../src/client
     ports:
-    - 5000:80
+    - 80:80
     volumes:
     - ./vuejs:/project
     - /project/node_modules
@@ -39,7 +39,7 @@ services:
     # build:
     #   context: ../src/server
     ports:
-    - 5001:80
+    - 443:80
     depends_on:
       db:
         condition: service_started

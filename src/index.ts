@@ -143,7 +143,7 @@ export function ECRsForDockerComposeImages(scope: Construct, repositoryNames: st
 /**
  * This is Kiss-Docker-Compose's code to create its Security Group.
  *
- * Creates a NEW security group which allows traffic on port 80.
+ * Creates a NEW security group which allows traffic on ports 80 and 443.
  *
  * @param scope scope in which this resource is defined
  * @param id is used as a prefix when creating the `id`
@@ -159,6 +159,8 @@ export function InstanceSecurityGroup(scope: Construct, id: string, vpc: cdk.aws
   });
   instanceSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(80), 'Allow port 80 access from anywhere');
   instanceSecurityGroup.addIngressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(80), 'Allow port 80 access from anywhere');
+  instanceSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(443), 'Allow port 443 access from anywhere');
+  instanceSecurityGroup.addIngressRule(ec2.Peer.anyIpv6(), ec2.Port.tcp(443), 'Allow port 443 access from anywhere');
   instanceSecurityGroup.addIngressRule(ec2.Peer.anyIpv4(), ec2.Port.tcp(22), 'Allow SSH access from anywhere');
 
   return instanceSecurityGroup;
