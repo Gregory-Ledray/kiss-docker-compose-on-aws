@@ -1,11 +1,5 @@
-import * as cdk from 'aws-cdk-lib';
-import { KissDockerCompose } from './index';
+# This Docker Compose file is only used by the README
 
-const app = new cdk.App();
-const stack = new cdk.Stack(app, 'MyStack', {
-});
-
-const dockerComposeFileAsString = `
 services:
   frontend:
     image: nginx # used as an example / for testing
@@ -35,7 +29,7 @@ services:
     # set shared memory limit when using docker-compose
     shm_size: 128mb
     healthcheck:
-      `+ 'test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]' + `
+      test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]
       interval: 15s
       timeout: 30s
       retries: 5
@@ -49,8 +43,3 @@ services:
 
 volumes:
   db-data:
-`;
-
-new KissDockerCompose(stack, 'Kiss-Docker-Compose', {
-    dockerComposeFileAsString: dockerComposeFileAsString,
-});
