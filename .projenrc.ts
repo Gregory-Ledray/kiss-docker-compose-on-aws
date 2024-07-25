@@ -8,7 +8,7 @@ const project = new awscdk.AwsCdkConstructLibrary({
   jsiiVersion: '~5.4.0',
   name: 'kiss-docker-compose',
   projenrcTs: true,
-  repositoryUrl: 'https://github.com/Gregory-Ledray/gregoryledray.com.git',
+  repositoryUrl: 'https://github.com/Gregory-Ledray/kiss-docker-compose-on-aws',
 
   deps: [
     // '@aws-cdk/aws-apigatewayv2',
