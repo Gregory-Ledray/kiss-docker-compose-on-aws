@@ -61,6 +61,10 @@ export class KissDockerCompose extends Construct {
    * regionOfEC2Instances is the region in which the EC2 instance will be deployed.
    */
   readonly regionOfEC2Instances = cdk.Stack.of(this).region;
+  /**
+   * EC2 Instance which was created. You may access this to get the instance's public DNS or IP
+   */
+  readonly ec2Instance: cdk.aws_ec2.Instance;
 
   /**
    * Create a new EC2 instance running your Docker Compose file.
@@ -113,10 +117,7 @@ export class KissDockerCompose extends Construct {
       );
     }
 
-    new cdk.CfnOutput(this, `${id}-public-ip`, {
-      value: props.ec2Instance.instancePublicIp,
-      exportName: `${id}-public-ip`,
-    });
+    this.ec2Instance = props.ec2Instance;
   }
 }
 

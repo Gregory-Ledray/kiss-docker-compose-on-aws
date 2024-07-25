@@ -51,6 +51,15 @@ volumes:
   db-data:
 `;
 
-new KissDockerCompose(stack, 'Kiss-Docker-Compose', {
+const kissDockerCompose = new KissDockerCompose(stack, 'Kiss-Docker-Compose', {
   dockerComposeFileAsString: dockerComposeFileAsString,
+});
+
+// Demonstrating how to get EC2 Instance's Public DNS
+console.log(kissDockerCompose.ec2Instance?.instancePublicDnsName ?? '');
+
+// Exporting the value so you can find it easily
+new cdk.CfnOutput(stack, 'Kiss-Docker-Compose-public-ip', {
+  value: kissDockerCompose.ec2Instance?.instancePublicDnsName ?? '',
+  exportName: 'Kiss-Docker-Compose-public-ip',
 });

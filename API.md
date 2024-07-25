@@ -91,6 +91,7 @@ Any object.
 | **Name** | **Type** | **Description** |
 | --- | --- | --- |
 | <code><a href="#kiss-docker-compose.KissDockerCompose.property.node">node</a></code> | <code>constructs.Node</code> | The tree node. |
+| <code><a href="#kiss-docker-compose.KissDockerCompose.property.ec2Instance">ec2Instance</a></code> | <code>aws-cdk-lib.aws_ec2.Instance</code> | EC2 Instance which was created. |
 | <code><a href="#kiss-docker-compose.KissDockerCompose.property.regionOfEC2Instances">regionOfEC2Instances</a></code> | <code>string</code> | regionOfEC2Instances is the region in which the EC2 instance will be deployed. |
 | <code><a href="#kiss-docker-compose.KissDockerCompose.property.regionOfECR">regionOfECR</a></code> | <code>string</code> | regionOfECR is the region from which the ECR image will be pulled. |
 
@@ -105,6 +106,20 @@ public readonly node: Node;
 - *Type:* constructs.Node
 
 The tree node.
+
+---
+
+##### `ec2Instance`<sup>Required</sup> <a name="ec2Instance" id="kiss-docker-compose.KissDockerCompose.property.ec2Instance"></a>
+
+```typescript
+public readonly ec2Instance: Instance;
+```
+
+- *Type:* aws-cdk-lib.aws_ec2.Instance
+
+EC2 Instance which was created.
+
+You may access this to get the instance's public DNS or IP
 
 ---
 
