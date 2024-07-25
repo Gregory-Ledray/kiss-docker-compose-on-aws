@@ -52,5 +52,5 @@ volumes:
 `;
 
 new KissDockerCompose(stack, 'Kiss-Docker-Compose', {
-    dockerComposeFileAsString: dockerComposeFileAsString,
+  dockerComposeFileAsString: dockerComposeFileAsString,
 });

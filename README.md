@@ -1,34 +1,118 @@
 # KISS Docker Compose on AWS
+
 Cheap. Simple. Fast.
 
 Move your Docker Compose application from your local machine to the cloud in 3 minutes with KISS-Docker-Compose.
 
-* Cheap: All code runs on one small EC2.
-* Simple: It runs the same way on your machine as it runs in the cloud.
-* Fast: Works by default.
+- Cheap: All code runs on one small EC2.
+- Simple: It runs the same way on your machine as it runs in the cloud.
+- Fast: Works by default.
 
-## Usage
+# Get Started
 
+## Install
+
+`npm i kiss-docker-compose`
+
+## Inline Docker Compose File
+
+```
+const dockerComposeFileAsString = `
+services:
+  frontend:
+    image: nginx # used as an example / for testing
+    restart: always
+    # build:
+    #   context: ../src/client
+    ports:
+    - 80:80
+    volumes:
+    - ./vuejs:/project
+    - /project/node_modules
+
+  backend:
+    image: nginx # used as an example / for testing
+    restart: always
+    # build:
+    #   context: ../src/server
+    ports:
+    - 443:80
+    depends_on:
+      db:
+        condition: service_started
+
+  db:
+    image: postgres
+    restart: always
+    # set shared memory limit when using docker-compose
+    shm_size: 128mb
+    healthcheck:
+      `+ 'test: [ "CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}" ]' + `
+      interval: 15s
+      timeout: 30s
+      retries: 5
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "password"
+    volumes:
+      - db-data:/var/lib/postgres
+
+volumes:
+  db-data:
+`;
+new KissDockerCompose(stack, 'kiss-docker-compose', { dockerComposeFileAsString });
+```
+
+## Load a Docker Compose File
+
+Get a sample Docker Compose File:
+
+```
+curl -O https://raw.githubusercontent.com/Gregory-Ledray/kiss-docker-compose-on-aws/main/test/docker-compose.yml
+```
+
+And use it:
+
+```
+import * as fs from 'fs';
+import { KissDockerCompose } from 'kiss-docker-compose'
+
+const dockerComposeFileAsString = fs.readFileSync('./docker-compose.yml', 'utf8');
+new KissDockerCompose(stack, 'kiss-docker-compose', { dockerComposeFileAsString });
+```
 
 # Contributing
+
 ## Update Projen
+
 ```
 npx projen
 ```
+
 ## Test
+
 ```
 npx projen test
 ```
+
 ## Build
+
 ```
 npx projen build
 ```
+
 ## Test Deployment
+
 You may need to set some parameters since modifying `src/integ.default.ts` is ill advised:
+
 ```
 export AWS_REGION=us-east-2
 ```
+
 Deploy:
+
 ```
 cdk deploy --app='./lib/integ.default.js'
 ```
