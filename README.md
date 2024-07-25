@@ -2,11 +2,11 @@
 
 Cheap. Simple. Fast.
 
-Move your Docker Compose application from your local machine to the cloud in 3 minutes with KISS-Docker-Compose.
+Move your [Docker Compose](https://docs.docker.com/compose/) application stack from your local machine to the cloud in 3 minutes with KISS-Docker-Compose.
 
-- Cheap: All code runs on one small EC2.
-- Simple: It runs the same way on your machine as it runs in the cloud.
-- Fast: Works by default.
+- Cheap: All code runs on one EC2 instance, which means you can get [swap space](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-store-swap-volumes.html) ([unlike Fargate](https://github.com/aws/containers-roadmap/issues/2061)) and [all containers share resources](https://docs.docker.com/config/containers/resource_constraints/) which can reduce unusued resource capacity. Note: Swap isn't currently configured for this project.
+- Simple: It runs the same way on your machine with Docker Compose as it runs in the cloud because both are running a Docker Compose file.
+- Fast: Deploys quickly.
 
 # Get Started
 
