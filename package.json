@@ -62,6 +62,9 @@
     "constructs": "^10.0.5"
   },
   "keywords": [
+    "Docker Compose",
+    "Docker-Compose",
+    "aws-cdk",
     "cdk"
   ],
   "main": "lib/index.js",

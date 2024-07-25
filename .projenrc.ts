@@ -18,6 +18,12 @@ const project = new awscdk.AwsCdkConstructLibrary({
   // devDeps: [],             /* Build dependencies for this module. */
   // packageName: undefined,  /* The "name" in package.json. */
   gitignore: ['cdk.out'],
+  keywords: [
+    'aws-cdk',
+    'cdk',
+    'Docker Compose',
+    'Docker-Compose',
+  ],
 
   packageManager: NodePackageManager.NPM,
 });
