@@ -62,10 +62,18 @@ services:
 volumes:
   db-data:
 `;
-new KissDockerCompose(stack, 'kiss-docker-compose', { dockerComposeFileAsString });
+
+const kissDockerCompose = new KissDockerCompose(stack, 'kiss-docker-compose', { dockerComposeFileAsString });
+
+// Exporting the value so you can find it easily
+new cdk.CfnOutput(stack, 'Kiss-Docker-Compose-public-ip', {
+  value: kissDockerCompose.ec2Instance?.instancePublicDnsName ?? '',
+  exportName: 'Kiss-Docker-Compose-public-ip',
+});
+
 ```
 
-## Load a Docker Compose File
+## Load a Docker Compose File From Your File System
 
 Get a sample Docker Compose File:
 
@@ -80,7 +88,14 @@ import * as fs from 'fs';
 import { KissDockerCompose } from 'kiss-docker-compose'
 
 const dockerComposeFileAsString = fs.readFileSync('./docker-compose.yml', 'utf8');
-new KissDockerCompose(stack, 'kiss-docker-compose', { dockerComposeFileAsString });
+
+const kissDockerCompose = new KissDockerCompose(stack, 'kiss-docker-compose', { dockerComposeFileAsString });
+
+// Exporting the value so you can find it easily
+new cdk.CfnOutput(stack, 'Kiss-Docker-Compose-public-ip', {
+  value: kissDockerCompose.ec2Instance?.instancePublicDnsName ?? '',
+  exportName: 'Kiss-Docker-Compose-public-ip',
+});
 ```
 
 # Contributing
