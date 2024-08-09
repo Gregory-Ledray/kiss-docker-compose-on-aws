@@ -133,6 +133,7 @@ export class KissDockerCompose extends Construct {
         this.regionOfEC2Instances,
         this.regionOfECR,
         props.dockerComposeFileAsString,
+        undefined,
         props.machineImage,
       );
     }
@@ -319,6 +320,10 @@ export function Ec2InstanceRole(scope: Construct, id: string): cdk.aws_iam.Role 
  * @param regionOfEC2Instances EC2 instance region. Usually cdk.Stack.of(this).region
  * @param regionOfECR ECR region. Usually cdk.Stack.of(this).region
  * @param dockerComposeFileAsString always the same as props.dockerComposeFileAsString
+ * @param swapCountIn128MBChunks Default 0. If set to null or 0 or less, does not set swap.
+ * Sets up a swap file with size = Math.Round(swapCountIn128MBChunks) * 128M.
+ * For example, if swapCountIn128MBChunks == 1 then there will be 128MB of swap. There is NOT a check to verify there is enough
+ * storage on the instance to support the swap file size.
  * @param machineImage Used to initialize the EC2 Instance.
  * @returns A NEW EC2 instance which will run Docker Compose when launched and when restarted.
  */
@@ -333,6 +338,7 @@ export function EC2Instance(
   regionOfEC2Instances: string,
   regionOfECR: string,
   dockerComposeFileAsString: string,
+  swapCountIn128MBChunks?: number,
   machineImage?: cdk.aws_ec2.IMachineImage,
 ): cdk.aws_ec2.Instance {
   if (
@@ -427,9 +433,12 @@ export function EC2Instance(
           ec2.InitFile.fromString('/home/ec2-user/docker-compose.yml', dockerComposeFileAsString),
           ec2.InitFile.fromString('/etc/install.sh', installAndStartupScript()),
           ec2.InitFile.fromString('/etc/systemd/system/docker-compose-app.service', dockerComposeAppService()),
+          ec2.InitFile.fromString('/etc/set-up-swap.sh', setUpSwap(swapCountIn128MBChunks)),
           ec2.InitFile.fromString('/home/ec2-user/docker-compose-setup.sh', dockerComposeSetup(cdk.Stack.of(scope).account, regionOfECR, repoURIs)),
           ec2.InitCommand.shellCommand('chmod +x /etc/install.sh'),
           ec2.InitCommand.shellCommand('/etc/install.sh'),
+          ec2.InitCommand.shellCommand('chmod +x /etc/set-up-swap.sh'),
+          ec2.InitCommand.shellCommand('sudo /etc/set-up-swap.sh'),
           ec2.InitFile.fromString('/home/ec2-user/on-stop.sh', onStopScript()),
           ec2.InitCommand.shellCommand('chmod +x /home/ec2-user/on-stop.sh'),
 
@@ -601,3 +610,31 @@ sudo systemctl enable docker-compose-app
   // /etc/install.sh
   return `${installDocker}${installDockerCompose}${dockerOnStartup}`;
 }
+
+function setUpSwap(swapCountIn128MBChunks: number | undefined): string {
+  if (swapCountIn128MBChunks == null || swapCountIn128MBChunks <= 0) {
+    return `#!/bin/bash
+echo "NOT setting up swap"
+`;
+  }
+  swapCountIn128MBChunks = Math.round(swapCountIn128MBChunks);
+
+  return `#!/bin/bash
+# mounting should already be done
+# sudo mount /dev/xvda2 /mnt
+
+# Create the swap file
+sudo dd if=/dev/zero of=/swapfile bs=128M count=${swapCountIn128MBChunks.toString()}
+
+# permissions
+sudo chmod 600 /swapfile
+
+# make it swap
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# Add to fstab so swap persists after restarting
+echo "\n/swapfile swap swap defaults 0 0\n" >> /etc/fstab
+`;
+}
+

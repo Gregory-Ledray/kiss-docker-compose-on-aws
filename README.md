@@ -12,7 +12,10 @@ Move your [Docker Compose](https://docs.docker.com/compose/) application stack f
 
 ## Install
 
-`npm i kiss-docker-compose`
+```
+npm i kiss-docker-compose
+npm i aws-cdk-lib
+```
 
 ## Inline Docker Compose File
 
@@ -180,5 +183,5 @@ export AWS_REGION=us-east-2
 Deploy:
 
 ```
-cdk deploy --app='./lib/integ.default.js'
+npx cdk deploy --app='./lib/integ.default.js'
 ```
