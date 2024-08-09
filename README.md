@@ -104,6 +104,14 @@ General Procedure:
 1. cdk destroy
 1. Find the EBS Volume which was preserved after deletion and delete it.
 
+### Detailed Procedure
+1. Run this command:
+```
+npx cdk destroy
+```
+
+1. By default, the EC2 Instance preserves its root volume when deleted. You need to find this volume and delete it. It will be in the same region as the EC2 Instance.
+
 # Contributing
 
 ## Update Projen

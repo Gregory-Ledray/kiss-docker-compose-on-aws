@@ -49,6 +49,16 @@ export interface IKissDockerComposeProps {
    * Default: InstanceSecurityGroup(this, id, props.vpc)
    */
   instanceSecurityGroup?: cdk.aws_ec2.SecurityGroup;
+
+  /**
+   * machineImage used to create the EC2 Instance.
+   * The docs sometimes refer to this as "ImageId" or "AMI".
+   * This is used if (1) your instance was stateful, and (2) you were running Kiss-Docker-Compose already, but then
+   * (3) you updated your infrastructure, and (4) it deleted your stateful information, and now (5) you want to restore your stateful data.
+   *
+   * Default: undefined
+   */
+  machineImage?: cdk.aws_ec2.IMachineImage;
 }
 
 
@@ -103,6 +113,7 @@ export class KissDockerCompose extends Construct {
       if (props.instanceSecurityGroup == null) {
         props.instanceSecurityGroup = InstanceSecurityGroup(this, id, props.vpc);
       }
+
       props.ec2Instance = EC2Instance(
         this,
         id,
@@ -114,6 +125,7 @@ export class KissDockerCompose extends Construct {
         this.regionOfEC2Instances,
         this.regionOfECR,
         props.dockerComposeFileAsString,
+        props.machineImage,
       );
     }
 
@@ -194,6 +206,35 @@ export function VPC(scope: Construct, id: string): cdk.aws_ec2.Vpc {
 }
 
 /**
+ * Create a policy statement to support us creating a new machine image (AMI). This allows describing EC2 instances because
+ * that is required to figure out which instance we need to image.
+ *
+ * This is currently unused, but I intend to use it in the future to create an AMI when the instance is destroyed to automate recovery.
+ *
+ * @returns A policy statement which supports creating an image
+ */
+export function CreateImagePolicyStatement(): cdk.aws_iam.PolicyStatement {
+  let policyStatement: cdk.aws_iam.PolicyStatement = new cdk.aws_iam.PolicyStatement({
+    effect: cdk.aws_iam.Effect.ALLOW,
+    actions: [
+      'ec2:CreateImage',
+      'ec2:CreateSnapshot',
+      'ec2:CreateTags',
+      'ec2:DescribeAvailabilityZones',
+      'ec2:DescribeImages',
+      'ec2:DescribeInstances',
+      'ec2:DescribeSnapshots',
+      'ec2:DescribeTags',
+      'ec2:DescribeVolumeAttribute',
+      'ec2:DescribeVolumeStatus',
+      'ec2:DescribeVolumes',
+    ],
+  });
+  policyStatement.addAllResources();
+  return policyStatement;
+}
+
+/**
  * This is Kiss-Docker-Compose's code to create its Role.
  *
  * Ec2InstanceRole creates a NEW Role which is able to perform the work to run Docker Compose and write logs to CloudWatch.
@@ -204,6 +245,13 @@ export function VPC(scope: Construct, id: string): cdk.aws_ec2.Vpc {
  * @returns created Role
  */
 export function Ec2InstanceRole(scope: Construct, id: string): cdk.aws_iam.Role {
+  let CreateImagePolicyStatements: cdk.aws_iam.PolicyStatement[] = [];
+  // This is currently unused, but I intend to use it in the future to create an AMI when the instance is destroyed to automate recovery.
+  // CreateImagePolicyStatements.push(CreateImagePolicyStatement());
+  let imagePolicy = new cdk.aws_iam.PolicyDocument({
+    statements: CreateImagePolicyStatements.length > 0 ? CreateImagePolicyStatements : undefined,
+  });
+
   return new iam.Role(scope, `${id}-ec2-role`, {
     assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
     managedPolicies: [
@@ -216,7 +264,15 @@ export function Ec2InstanceRole(scope: Construct, id: string): cdk.aws_iam.Role 
       // Without this, journalctl will show an error like this one:
       // Error response from daemon: failed to create task for container: failed to initialize logging driver: failed to create Cloudwatch log stream
       iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchFullAccess'),
+
     ],
+    inlinePolicies: imagePolicy.statementCount > 0 ? {
+      // This is used by the instance to create an image using the following steps:
+      // 1. (This policy is not needed to perform this step) Get ID of instance from the instance metadata service
+      // 2. Call `aws ec2 describe-instances ...` repeatedly to understand the instance
+      // 3. Create the image
+      imagePolicy: imagePolicy,
+    } : undefined,
   });
 }
 
@@ -248,6 +304,7 @@ export function Ec2InstanceRole(scope: Construct, id: string): cdk.aws_iam.Role 
  * @param regionOfEC2Instances EC2 instance region. Usually cdk.Stack.of(this).region
  * @param regionOfECR ECR region. Usually cdk.Stack.of(this).region
  * @param dockerComposeFileAsString always the same as props.dockerComposeFileAsString
+ * @param machineImage Used to initialize the EC2 Instance.
  * @returns A NEW EC2 instance which will run Docker Compose when launched and when restarted.
  */
 export function EC2Instance(
@@ -261,6 +318,7 @@ export function EC2Instance(
   regionOfEC2Instances: string,
   regionOfECR: string,
   dockerComposeFileAsString: string,
+  machineImage?: cdk.aws_ec2.IMachineImage,
 ): cdk.aws_ec2.Instance {
   if (
     scope == null ||
@@ -282,7 +340,12 @@ export function EC2Instance(
     repoURIs.push(repositoriesForDockerComposeImages[i].repositoryUriForDigest());
   }
 
-  return new ec2.Instance(scope, `${id}`, {
+  // machineImage is the AMI for the instance.
+  if (machineImage == null) {
+    machineImage = ec2.MachineImage.latestAmazonLinux2023();
+  }
+
+  let ec2Instance = new ec2.Instance(scope, `${id}`, {
     // This first section contains relatively common properties for an EC2 instance
     vpc: vpc,
     role: ec2InstanceRole,
@@ -290,7 +353,7 @@ export function EC2Instance(
 
     // This is an x86 instance type and machine image
     instanceType: ec2.InstanceType.of(ec2.InstanceClass.T3, instanceSize),
-    machineImage: ec2.MachineImage.latestAmazonLinux2023(),
+    machineImage: machineImage,
 
     // This is an ARM64 instance type and machine image
     // ARM64 is not compatible with the scripts I have written and may not be compatible with the demo images I'm using
@@ -352,6 +415,8 @@ export function EC2Instance(
           ec2.InitFile.fromString('/home/ec2-user/docker-compose-setup.sh', dockerComposeSetup(cdk.Stack.of(scope).account, regionOfECR, repoURIs)),
           ec2.InitCommand.shellCommand('chmod +x /etc/install.sh'),
           ec2.InitCommand.shellCommand('/etc/install.sh'),
+          ec2.InitFile.fromString('/home/ec2-user/on-stop.sh', onStopScript()),
+          ec2.InitCommand.shellCommand('chmod +x /home/ec2-user/on-stop.sh'),
 
           // The very first time we start the machine, we need to start the unit because it won't start automatically without rebooting
           ec2.InitCommand.shellCommand('sudo systemctl start docker-compose-app.service'),
@@ -365,6 +430,8 @@ export function EC2Instance(
       timeout: cdk.Duration.minutes(4),
     },
   });
+
+  return ec2Instance;
 }
 
 /**
@@ -396,7 +463,8 @@ function dockerComposeAppService() {
 
 [Unit]
 Description=Docker Compose Application Service
-Requires=docker.service
+# network-online.target and network.target exist to ensure that when shutdown happens and ExecStop runs, there is still network connectivity 
+Requires=docker.service, network-online.target, network.target
 After=docker.service
 
 [Service]
@@ -406,7 +474,12 @@ WorkingDirectory=/home/ec2-user
 ExecStartPre=/home/ec2-user/docker-compose-setup.sh
 ExecStart=/usr/bin/docker-compose up -d --no-build
 ExecStop=/usr/bin/docker-compose down
+# work done on shutdown is usually done to prevent data loss if the instance is terminated after shutdown
+ExecStop=/home/ec2-user/on-stop.sh
 TimeoutStartSec=0
+# allow 5 minutes to run on-stop.sh
+# There is some evidence that EC2 only allows this script to run for about 2 minutes before it kills it off
+TimeoutStopSec=300
 
 [Install]
 WantedBy=multi-user.target
@@ -444,6 +517,41 @@ function dockerComposeSetup(awsAccountNumber: string, ecrRegion: string, repos: 
   // To ensure consistency between ECR-using code and non-ECR code, we need to make sure compose down always runs
   // Therefore, let's return a simpler script which only calls `docker-compose down`.
   return `${scriptStart}${composeDown}`;
+}
+
+/**
+ * onStopScript should be run when the instance stops.
+ * WARNING: This script may not work the same way when an instance is terminated as when it is stopped.
+ *
+ * This is currently unused, but I intend to use it in the future to create an AMI when the instance is destroyed to automate recovery.
+ *
+ * @returns String which is a script to create an AMI of this instance. This AMI could be passed to KissDockerCompose in the future
+ */
+function onStopScript(): string {
+  return `#!/bin/sh
+# /home/ec2-user/on-stop.sh
+echo "onStopScript triggered"
+`;
+
+  //   // This first part of the script has the sole purpose of getting the root volume id
+  //   const script = `#!/bin/sh
+  // # /home/ec2-user/on-stop.sh
+  // TOKEN=\`curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600"\`
+  // Instance_ID=$(curl -H "X-aws-ec2-metadata-token: $TOKEN" -s http://169.254.169.254/latest/meta-data/instance-id)
+  // echo "Instance ID: $Instance_ID"
+
+  // Instance_Name=$(aws ec2 describe-instances --instance-ids \${Instance_ID} --query 'Reservations[0].Instances[0].Tags[?Key==\`Name\`].Value' --output text)
+  // echo "Instance Name: $Instance_Name"
+  // `;
+
+  //   // no-reboot makes sense; the instance is shutting down and we should not be rebooting it right now.
+  //   // `aws ec2 wait image-available` does not seem to be necessary if you stop the instance in the console, but it is necessary if
+  //   // you terminate the instance.
+  //   return script+`AMI_ID=$(aws ec2 create-image --no-reboot --instance-id $Instance_ID --name "\${Instance_Name}-on-stop-\${RANDOM}\${RANDOM}\${RANDOM}" --query 'ImageId' --output text)
+  // echo "AMI ID: $AMI_ID"
+
+// /usr/bin/aws ec2 wait image-available --image-ids $AMI_ID
+// `;
 }
 
 /**

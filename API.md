@@ -169,6 +169,7 @@ To customize, first get the default values for these properties (which are expor
 | <code><a href="#kiss-docker-compose.IKissDockerComposeProps.property.ec2Instance">ec2Instance</a></code> | <code>aws-cdk-lib.aws_ec2.Instance</code> | Setting this value overrides and ignores the repositoriesForDockerComposeImages, vpc, ec2InstanceRole, and instanceSecurityGroup parameters. |
 | <code><a href="#kiss-docker-compose.IKissDockerComposeProps.property.ec2InstanceRole">ec2InstanceRole</a></code> | <code>aws-cdk-lib.aws_iam.Role</code> | Setting this overrides the template's Role with which the ec2Instance is deployed. |
 | <code><a href="#kiss-docker-compose.IKissDockerComposeProps.property.instanceSecurityGroup">instanceSecurityGroup</a></code> | <code>aws-cdk-lib.aws_ec2.SecurityGroup</code> | Setting this overrides the template's SecurityGroup with which the ec2Instance is deployed. |
+| <code><a href="#kiss-docker-compose.IKissDockerComposeProps.property.machineImage">machineImage</a></code> | <code>aws-cdk-lib.aws_ec2.IMachineImage</code> | machineImage used to create the EC2 Instance. |
 | <code><a href="#kiss-docker-compose.IKissDockerComposeProps.property.repositoriesForDockerComposeImages">repositoriesForDockerComposeImages</a></code> | <code>aws-cdk-lib.aws_ecr.IRepository[]</code> | ECR repositories containing images used for your Docker Compose application. |
 | <code><a href="#kiss-docker-compose.IKissDockerComposeProps.property.vpc">vpc</a></code> | <code>aws-cdk-lib.aws_ec2.Vpc</code> | Setting this overrides the template's VPC into which the ec2Instance is deployed. |
 
@@ -230,6 +231,24 @@ public readonly instanceSecurityGroup: SecurityGroup;
 Setting this overrides the template's SecurityGroup with which the ec2Instance is deployed.
 
 Default: InstanceSecurityGroup(this, id, props.vpc)
+
+---
+
+##### `machineImage`<sup>Optional</sup> <a name="machineImage" id="kiss-docker-compose.IKissDockerComposeProps.property.machineImage"></a>
+
+```typescript
+public readonly machineImage: IMachineImage;
+```
+
+- *Type:* aws-cdk-lib.aws_ec2.IMachineImage
+
+machineImage used to create the EC2 Instance.
+
+The docs sometimes refer to this as "ImageId" or "AMI".
+This is used if (1) your instance was stateful, and (2) you were running Kiss-Docker-Compose already, but then
+(3) you updated your infrastructure, and (4) it deleted your stateful information, and now (5) you want to restore your stateful data.
+
+Default: undefined
 
 ---
 

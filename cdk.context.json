@@ -1,0 +1,8 @@
+{
+  "availability-zones:account=270270594352:region=us-east-2": [
+    "us-east-2a",
+    "us-east-2b",
+    "us-east-2c"
+  ],
+  "ami:account=270270594352:filters.image-type.0=machine:filters.name.0=test for restore:filters.state.0=available:owners.0=270270594352:region=us-east-2": "ami-05b235c96c7573ab0"
+}
