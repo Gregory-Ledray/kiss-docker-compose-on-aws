@@ -303,6 +303,25 @@ export function EC2Instance(
     instanceName: `${id}`,
     requireImdsv2: true,
 
+    // Prevent deleting the root volume on termination
+    // https://github.com/Gregory-Ledray/kiss-docker-compose-on-aws/issues/3
+    // https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/preserving-volumes-on-termination.html#delete-on-termination-ebs-volume
+    blockDevices: [
+      {
+        // deviceName: '/dev/sda1',
+        // /dev/xvda is the default for other launched KDS instances
+        deviceName: '/dev/xvda',
+        volume: {
+          ebsDevice: {
+            deleteOnTermination: false,
+            volumeSize: 8, // either this or snapshotId is required
+            iops: 3_000, // seems to be the default
+            volumeType: cdk.aws_ec2.EbsDeviceVolumeType.GP3, // seems to be the default
+          },
+        },
+      },
+    ],
+
     // This is NOT NECESSARY because EC2 Instance Connect can be used to connect to this instance
     // And that service creates and shares its own key pair with the instance which is managed by AWS
     // You need to have a key pair to connect at all

@@ -2,7 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import { KissDockerCompose } from './index';
 
 const app = new cdk.App();
-const stack = new cdk.Stack(app, 'MyStack', {
+const stack = new cdk.Stack(app, 'IntegDefault', {
 });
 
 const dockerComposeFileAsString = `
@@ -51,7 +51,7 @@ volumes:
   db-data:
 `;
 
-const kissDockerCompose = new KissDockerCompose(stack, 'Kiss-Docker-Compose', {
+const kissDockerCompose = new KissDockerCompose(stack, 'Kiss-Docker-Compose-Integ-Default', {
   dockerComposeFileAsString: dockerComposeFileAsString,
 });
 

@@ -98,6 +98,12 @@ new cdk.CfnOutput(stack, 'Kiss-Docker-Compose-public-ip', {
 });
 ```
 
+## Delete or Destroy
+General Procedure:
+
+1. cdk destroy
+1. Find the EBS Volume which was preserved after deletion and delete it.
+
 # Contributing
 
 ## Update Projen
