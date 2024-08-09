@@ -112,6 +112,26 @@ npx cdk destroy
 
 1. By default, the EC2 Instance preserves its root volume when deleted. You need to find this volume and delete it. It will be in the same region as the EC2 Instance.
 
+## Accidental Delection / Disaster Recovery
+When the EC2 Instance is deleted, the volumes are saved. This is to prevent the CDK from deleting the EC2 Instance whenever you make a change and you losing all of your data. To restore your data, follow this procedure, which is also documented in TestPlan.md:
+
+1. Find your detatched volume. This will be in the same account and region the EC2 instance was in.
+2. Create a Snapshot from the Volume. This will take a minute or two.
+3. Create an AMI from the snapshot. Use the following settings:
+Some parameters:
+Image Name: test for restore
+Architecture: x86_64
+Root device name: /dev/xvda
+Virtualization Type: Hardware-assisted virtualization
+Boot mode: Use default
+Block device mappings:
+- Volume 1: 8 GiB. gp3. 3000. 125 MB/s. Uncheck "delete on termination."
+Click "Create Image"
+4. When calling Kiss-Docker-Compose, set the AMI parameter. Example: src/integ.from-ami.ts
+5. Deploy. The new deployment will use the AMI which was created from your Root Volume.
+
+Why does it work this way? Isn't this kind of roundabout? Yes, it is. I tried a variety of other approaches, but didn't get them to work. See: #3
+
 # Contributing
 
 ## Update Projen
