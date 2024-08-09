@@ -67,7 +67,7 @@ const kissDockerCompose = new KissDockerCompose(stack, 'Kiss-Docker-Compose-Inte
 console.log(kissDockerCompose.ec2Instance?.instancePublicDnsName ?? '');
 
 // Exporting the value so you can find it easily
-new cdk.CfnOutput(stack, 'Kiss-Docker-Compose-public-ip', {
+new cdk.CfnOutput(stack, 'KDC-public-ip-from-ami', {
   value: kissDockerCompose.ec2Instance?.instancePublicDnsName ?? '',
-  exportName: 'Kiss-Docker-Compose-public-ip',
+  exportName: 'KDC-public-ip-from-ami',
 });

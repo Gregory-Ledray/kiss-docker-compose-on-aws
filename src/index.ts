@@ -59,6 +59,14 @@ export interface IKissDockerComposeProps {
    * Default: undefined
    */
   machineImage?: cdk.aws_ec2.IMachineImage;
+
+  /**
+   * Elastic IP address is associated with the EC2 instance.
+   * If no value is passed then no EIP is created and an EIP is not used.
+   *
+   * Default: Nothing happens.
+   */
+  eip?: cdk.aws_ec2.CfnEIP | undefined;
 }
 
 
@@ -130,6 +138,13 @@ export class KissDockerCompose extends Construct {
     }
 
     this.ec2Instance = props.ec2Instance;
+
+    if (props.eip != null) {
+      new cdk.aws_ec2.CfnEIPAssociation(this, `${id}-eip-association`, {
+        allocationId: props.eip.attrAllocationId,
+        instanceId: props.ec2Instance.instanceId,
+      });
+    }
   }
 }
 

@@ -113,6 +113,8 @@ npx cdk destroy
 1. By default, the EC2 Instance preserves its root volume when deleted. You need to find this volume and delete it. It will be in the same region as the EC2 Instance.
 
 ## Accidental Delection / Disaster Recovery
+
+### Lost Data
 When the EC2 Instance is deleted, the volumes are saved. This is to prevent the CDK from deleting the EC2 Instance whenever you make a change and you losing all of your data. To restore your data, follow this procedure, which is also documented in TestPlan.md:
 
 1. Find your detatched volume. This will be in the same account and region the EC2 instance was in.
@@ -131,6 +133,21 @@ Click "Create Image"
 5. Deploy. The new deployment will use the AMI which was created from your Root Volume.
 
 Why does it work this way? Isn't this kind of roundabout? Yes, it is. I tried a variety of other approaches, but didn't get them to work. See: #3
+
+### Lost EIP
+If you destroy the stack, you could lose your EIP. What do you do if the EIP was allowlisted somewhere and you need it back?
+
+1. You can get back the EIP by following this procedure under the heading, "Recover an Elastic IP address": https://repost.aws/knowledge-center/ec2-recover-ip-address#
+
+2. Do NOT pass an EIP into Kiss-Docker-Compose since there is no way to import an EIP into the CDK (right now).
+
+3. Perform the following work yourself after calling Kiss-Docker-Compose:
+```
+new cdk.aws_ec2.CfnEIPAssociation(this, `${id}-eip-association`, {
+  allocationId: 'the-eip-allocation-id',
+  instanceId: kissDockerComposeClassInstance.ec2Instance.instanceId,
+});
+```
 
 # Contributing
 

@@ -168,6 +168,7 @@ To customize, first get the default values for these properties (which are expor
 | <code><a href="#kiss-docker-compose.IKissDockerComposeProps.property.dockerComposeFileAsString">dockerComposeFileAsString</a></code> | <code>string</code> | Your Docker Compose file, stringified. |
 | <code><a href="#kiss-docker-compose.IKissDockerComposeProps.property.ec2Instance">ec2Instance</a></code> | <code>aws-cdk-lib.aws_ec2.Instance</code> | Setting this value overrides and ignores the repositoriesForDockerComposeImages, vpc, ec2InstanceRole, and instanceSecurityGroup parameters. |
 | <code><a href="#kiss-docker-compose.IKissDockerComposeProps.property.ec2InstanceRole">ec2InstanceRole</a></code> | <code>aws-cdk-lib.aws_iam.Role</code> | Setting this overrides the template's Role with which the ec2Instance is deployed. |
+| <code><a href="#kiss-docker-compose.IKissDockerComposeProps.property.eip">eip</a></code> | <code>aws-cdk-lib.aws_ec2.CfnEIP</code> | Elastic IP address is associated with the EC2 instance. |
 | <code><a href="#kiss-docker-compose.IKissDockerComposeProps.property.instanceSecurityGroup">instanceSecurityGroup</a></code> | <code>aws-cdk-lib.aws_ec2.SecurityGroup</code> | Setting this overrides the template's SecurityGroup with which the ec2Instance is deployed. |
 | <code><a href="#kiss-docker-compose.IKissDockerComposeProps.property.machineImage">machineImage</a></code> | <code>aws-cdk-lib.aws_ec2.IMachineImage</code> | machineImage used to create the EC2 Instance. |
 | <code><a href="#kiss-docker-compose.IKissDockerComposeProps.property.repositoriesForDockerComposeImages">repositoriesForDockerComposeImages</a></code> | <code>aws-cdk-lib.aws_ecr.IRepository[]</code> | ECR repositories containing images used for your Docker Compose application. |
@@ -217,6 +218,22 @@ public readonly ec2InstanceRole: Role;
 Setting this overrides the template's Role with which the ec2Instance is deployed.
 
 Default: Ec2InstanceRole(this, id)
+
+---
+
+##### `eip`<sup>Optional</sup> <a name="eip" id="kiss-docker-compose.IKissDockerComposeProps.property.eip"></a>
+
+```typescript
+public readonly eip: CfnEIP;
+```
+
+- *Type:* aws-cdk-lib.aws_ec2.CfnEIP
+
+Elastic IP address is associated with the EC2 instance.
+
+If no value is passed then no EIP is created and an EIP is not used.
+
+Default: Nothing happens.
 
 ---
 

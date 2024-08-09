@@ -39,3 +39,10 @@ cdk deploy --app='./lib/integ.from-ami.js'
 
 10. Verify the deployment succeeded by ensuring that the website is reachable on the public IP address
 
+11. Run destroy:
+```
+cdk destroy --app='./lib/integ.from-ami.js'
+```
+
+12. Verify that all resources have been deleted
+
