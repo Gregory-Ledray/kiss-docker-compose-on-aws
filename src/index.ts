@@ -426,7 +426,7 @@ export function EC2Instance(
             'log-driver': 'awslogs',
             'log-opts': {
               'awslogs-region': regionOfEC2Instances,
-              'awslogs-group': 'intelligentrxcom',
+              'awslogs-group': id,
               'awslogs-create-group': true,
             },
           }),
