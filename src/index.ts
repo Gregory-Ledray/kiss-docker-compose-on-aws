@@ -447,6 +447,7 @@ export function EC2Instance(
         ]),
       },
     }),
+    // Should this be cdk.Aws.STACK_NAME instead of cdk.stack.of(scope).stackName? I am not sure.
     userData: ec2.UserData.custom(cfnSignal(`${id}-ec2`, cdk.Stack.of(scope).stackName, cdk.Stack.of(scope).region)),
 
     initOptions: {
